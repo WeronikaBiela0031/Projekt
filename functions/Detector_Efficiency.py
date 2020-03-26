@@ -5,7 +5,7 @@ from os import listdir
 def detector_eff(dir_path='../to_calculate/'):
     ''' This program is providing the detector efficiency correction caused by absorption of 25 um layer of beryllium
     :param a path to catalog in which we have saved the data for detector efficiency correction
-    :return:
+    :return: function does not return anything
     '''
     files = [f for f in listdir(dir_path)]
     dict_file = {}
