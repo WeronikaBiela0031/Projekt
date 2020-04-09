@@ -1,5 +1,10 @@
 import csv
 from os import listdir
+import math
+
+
+def round_half_up(n): #w przypadku naszych obliczeń chcemy zaokrąglić eV do całości
+    return math.floor(n + 0.5)
 
 
 def detector_eff(dir_path='../to_calculate/'):
@@ -27,8 +32,7 @@ def detector_eff(dir_path='../to_calculate/'):
                     else:
                         if is_valid_number < 0.5 or is_valid_number > 19:
                             continue
-                    # TODO fix rounding numbers
-                    photon_energy = round(float(line.strip().split(' ')[0]) * 1000)
+                    photon_energy = round_half_up(float(line.strip().split(' ')[0]) * 1000)
                     coefficient = dict_file_Be.get(photon_energy)
                     if coefficient == 0:
                         continue
@@ -37,6 +41,7 @@ def detector_eff(dir_path='../to_calculate/'):
                     results_writer.writerow([photon_energy, counts])
 
     print("Detector Efficiency Applied")
+
 
 
 def detector_eff_aluminium(dir_path='../to_calculate/'):
@@ -66,7 +71,7 @@ def detector_eff_aluminium(dir_path='../to_calculate/'):
                 dict_file_Al.setdefault(key, 1)
 
         with open(dir_path + file, 'r') as f:
-            new_file_name = '../results/' + file[:-4] + '_corrected.csv'
+            new_file_name = '../results/' + file[:-4] + '_Al_corrected.csv'
             with open(new_file_name, mode='w') as new_file_name:
                 results_writer = csv.writer(new_file_name, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 for line in f.readlines():
@@ -75,18 +80,16 @@ def detector_eff_aluminium(dir_path='../to_calculate/'):
                     except ValueError:
                         continue
                     else:
-                        if is_valid_number < 0.5 or is_valid_number > 19:
+                        if is_valid_number < 0.9 or is_valid_number > 19:
                             continue
-                    # TODO fix rounding numbers
-                    photon_energy = round(float(line.strip().split(' ')[0]) * 1000)
+                    photon_energy = round_half_up(float(line.strip().split(' ')[0]) * 1000)
                     coefficient = dict_file_Be.get(photon_energy)*dict_file_Al.get(photon_energy)
                     if coefficient == 0:
                         continue
                     counts_raw = float(line.strip().split(' ')[-1])
                     counts = counts_raw / coefficient
                     results_writer.writerow([photon_energy, counts])
-
-    print("Correction for aluminium window has been applied")
+    print("Correction for both beryllium and aluminium window has been applied")
 
 
 if __name__ == '__main__':
