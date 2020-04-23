@@ -1,9 +1,11 @@
 import csv
-from os import listdir
 import math
+from os import listdir
+
+import matplotlib.pyplot as plt
 
 
-def round_half_up(n): #w przypadku naszych obliczeń chcemy zaokrąglić eV do całości
+def round_half_up(n):  # w przypadku naszych obliczeń chcemy zaokrąglić eV do całości
     return math.floor(n + 0.5)
 
 
@@ -22,8 +24,12 @@ def detector_eff(dir_path='../to_calculate/'):
     for file in files:
         with open(dir_path + file, 'r') as f:
             new_file_name = '../results/' + file[:-4] + '_corrected.csv'
+            x = []
+            y = []
+            y_new = []
             with open(new_file_name, mode='w') as new_file_name:
                 results_writer = csv.writer(new_file_name, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                y_max = 0  # potrzebny limit dla liczby zliczeń na wykresie
                 for line in f.readlines():
                     try:
                         is_valid_number = float(line.strip()[0:3])
@@ -39,9 +45,30 @@ def detector_eff(dir_path='../to_calculate/'):
                     counts_raw = float(line.strip().split(' ')[-1])
                     counts = counts_raw / coefficient
                     results_writer.writerow([photon_energy, counts])
+                    if photon_energy > 2500 and y_max < counts:
+                        y_max = counts
+
+                    x.append(photon_energy)
+                    y.append(counts_raw)
+                    y_new.append(counts)
+
+                plt.plot(x, y, label='Row data')
+                plt.xlabel('Photon energy [eV]')
+                plt.ylabel('Counts')
+                plt.title('Plot presents data before absorption correction')
+                plt.legend()
+                plt.show()
+
+                plt.xlim(2500, 20000)
+                plt.ylim(-500, y_max)
+                plt.plot(x, y_new, label='Corrected data')
+                plt.xlabel('Photon energy [eV]')
+                plt.ylabel('Counts')
+                plt.title('Plot presents data after absorption correction')
+                plt.legend()
+                plt.show()
 
     print("Detector Efficiency Applied")
-
 
 
 def detector_eff_aluminium(dir_path='../to_calculate/'):
@@ -83,7 +110,7 @@ def detector_eff_aluminium(dir_path='../to_calculate/'):
                         if is_valid_number < 0.9 or is_valid_number > 19:
                             continue
                     photon_energy = round_half_up(float(line.strip().split(' ')[0]) * 1000)
-                    coefficient = dict_file_Be.get(photon_energy)*dict_file_Al.get(photon_energy)
+                    coefficient = dict_file_Be.get(photon_energy) * dict_file_Al.get(photon_energy)
                     if coefficient == 0:
                         continue
                     counts_raw = float(line.strip().split(' ')[-1])
@@ -94,4 +121,4 @@ def detector_eff_aluminium(dir_path='../to_calculate/'):
 
 if __name__ == '__main__':
     detector_eff()
-   # detector_eff_aluminium()
+    # detector_eff_aluminium()
