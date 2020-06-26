@@ -1,8 +1,11 @@
 import csv
 import math
 from os import listdir
-
+import numpy as np
+import pandas as pd
+from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
+from scipy import optimize
 
 
 def round_half_up(n):  # w przypadku naszych obliczeń chcemy zaokrąglić eV do całości
@@ -109,16 +112,57 @@ def detector_eff_aluminium(dir_path='../to_calculate/'):
                     else:
                         if is_valid_number < 0.9 or is_valid_number > 19:
                             continue
-                    photon_energy = round_half_up(float(line.strip().split(' ')[0]) * 1000)
+                    photon_energy = round_half_up(float(line.strip().split(',')[0]) * 1000)
+
                     coefficient = dict_file_Be.get(photon_energy) * dict_file_Al.get(photon_energy)
                     if coefficient == 0:
                         continue
-                    counts_raw = float(line.strip().split(' ')[-1])
+                    try:
+                        counts_raw = float(line.strip().split(',')[-1])
+                    except ValueError:
+                        counts_raw = 0
                     counts = counts_raw / coefficient
                     results_writer.writerow([photon_energy, counts])
     print("Correction for both beryllium and aluminium window has been applied")
 
 
+def _1gaussian(x, amp1, cen1, sigma1):
+    return amp1 * (1 / (sigma1 * (np.sqrt(2 * np.pi)))) * (
+        np.exp((-1.0 / 2.0) * (((x - cen1) / sigma1) ** 2)))
+
+def calibration_Al(dir_path='../to_calculate/'):
+    files = [f for f in listdir(dir_path)]
+    for file in files:
+        with open(dir_path + file, 'r') as f: #kodowanie w ANSCII
+            new_file_name = '../results/' + file[:-4] + '_calibrated.csv'
+            x = []
+            y = []
+            y_new = []
+            # with open(new_file_name, mode='w') as new_file_name:
+            #     results_writer = csv.writer(new_file_name, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            for line in f.readlines():
+                # print(line)
+                try:
+                    is_valid_number = float(line.strip()[0:3])
+                except ValueError:
+                    continue
+
+                if is_valid_number > 1.0 and is_valid_number < 2.0: #Al line
+
+                    x.append(line.strip().split(' ')[0])
+                    y.append(line.strip().split(' ')[-1])
+            df_Al = pd.DataFrame({"Photon energy": x, "counts": y})
+            import pdb; pdb.set_trace()
+            popt_gauss, pcov_gauss = scipy.optimize.curve_fit(_1gaussian, x, y,
+                                                              p0=[amp1, cen1, sigma1])
+            perr_gauss = np.sqrt(np.diag(pcov_gauss))
+            peaks, properties = find_peaks(y, width= 20)
+            plt.plot(y)
+            plt.plot(peaks, y[peaks], "counts")
+            plt.show()
+    print('Calibration performed')
+
 if __name__ == '__main__':
-    detector_eff()
-    # detector_eff_aluminium()
+   # detector_eff()
+    #detector_eff_aluminium()
+    calibration_Al()
